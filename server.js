@@ -6,11 +6,6 @@ const port = 8000;
 const app = express();
 app.use(express.json());
 
-// app.get('/', (req, res) => {
-//     res.sendStatus(200);
-// });
-
-
 
 //routes
 app.get('/', async (req, res) => {
@@ -27,7 +22,8 @@ app.post('/', async (req, res) => {
     const { name, address } = req.body
     try {
         if (address) { // Check if address is provided
-            await pool.query('INSERT INTO schools (name, address) VALUES ($1, $2)', [name, address])
+            await pool.query('INSERT INTO schools (name, address) VALUES ($1, $2)', [name, address]);
+            console.log("Successfully added school");
             res.status(200).send({ message: "Successfully added school" })
         } else {
             res.status(400).send({ message: "Address is required" })
