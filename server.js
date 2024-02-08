@@ -21,7 +21,7 @@ app.get('/', async (req, res) => {
         console.log(err)
         res.sendStatus(500)
     }
-})
+});
 
 app.post('/', async (req, res) => {
     const { name, address } = req.body
@@ -37,7 +37,7 @@ app.post('/', async (req, res) => {
         console.log(err)
         res.sendStatus(500)
     }
-})
+});
 
 app.listen(port, () => {
     console.log(`Server at http://localhost:${port}`);
