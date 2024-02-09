@@ -21,13 +21,8 @@ app.use("/api/stations", stationRoute);
 app.use("/api/trains", trainRoute);
 app.use("/api/wallets", walletRoute);
 app.use("/api/tickets", ticketRoute);
-
-// Routes
-// app.use("/", insertDataRoute);
-// app.use("/", getAllDataRoute);
-
 app.use("/api/users", userRoute);
-app.use("/api/stations", stationRoute)
+
 
 
 app.listen(port, () => {
