@@ -1,13 +1,23 @@
-**git-push-pull**
+
+
+
+
+
+
+
+
+**go to your branch first**
+git checkout -b dipit
+
+**git-pull-cmd**
 
 git fetch origin
 git pull origin main
 
 
-**new**
+**git-push-cmd**
 git add .
-git commit -m "Check"
+git commit -m "your message here"
 git push -u origin dipit
 
 
-git checkout -b dipit
