@@ -5,8 +5,7 @@ import trainRoute from "./routes/trainRoute.js"
 import walletRoute from "./routes/walletRoute.js"
 import ticketRoute from "./routes/ticketRoute.js"
 import userRoute from "./routes/userRoute.js";
-
-
+import planRoute from "./routes/planRoute.js";
 
 import pool from "./DB.js";
 
@@ -19,6 +18,8 @@ app.use("/api/trains", trainRoute);
 app.use("/api/wallets", walletRoute);
 app.use("/api/tickets", ticketRoute);
 app.use("/api/users", userRoute);
+app.use("/api/routes", planRoute);
+
 
 
 
