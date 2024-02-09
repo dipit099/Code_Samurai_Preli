@@ -4,7 +4,7 @@ import pool from "../DB.js";
 const router = express.Router();
 
 router.get('/:wallet_id', async (req, res) => {
-    const walletId = req.params.wallet_id;
+    const walletId = parseInt(req.params.wallet_id);
 
     try {
         // Query the database to find the wallet information
@@ -17,7 +17,7 @@ router.get('/:wallet_id', async (req, res) => {
         // Check if the user with the wallet exists
         if (queryResult.rows.length === 0) {
             // If user does not exist with the provided wallet ID, return 404 status code with a message
-            return res.status(404).json({ message: `User with wallet ID ${walletId} was not found` });
+            return res.status(404).json({ message: `wallet with id: ${walletId} was not found` });
         }
 
         // If user exists, return 200 status code with user's wallet information
@@ -37,7 +37,7 @@ router.get('/:wallet_id', async (req, res) => {
 });
 
 router.put('/:wallet_id', async (req, res) => {
-    const walletId = req.params.wallet_id;
+    const walletId = parseInt(req.params.wallet_id);
     const rechargeAmount = req.body.recharge;
 
     try {

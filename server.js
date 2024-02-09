@@ -1,14 +1,11 @@
 // app.js
 import express from "express";
-import insertDataRoute from "./routes/insertDataRoute.js";
-import getAllDataRoute from "./routes/getAllDataRoute.js";
 import stationRoute from "./routes/stationRoute.js"
 import trainRoute from "./routes/trainRoute.js"
 import walletRoute from "./routes/walletRoute.js"
 import ticketRoute from "./routes/ticketRoute.js"
-
 import userRoute from "./routes/userRoute.js";
-import stationRoute from "./routes/stationRoute.js";
+
 
 
 import pool from "./DB.js";
