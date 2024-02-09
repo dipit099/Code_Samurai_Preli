@@ -3,106 +3,96 @@ import pool from "../DB.js";
 
 const router = express.Router();
 
-// POST method to create tickets
+// Helper function to calculate time difference in minutes
+function getTimeDifferenceInMinutes(time1, time2) {
+    const [hours1, minutes1] = time1.split(':').map(Number);
+    const [hours2, minutes2] = time2.split(':').map(Number);
+    return (hours2 - hours1) * 60 + (minutes2 - minutes1);
+}
+
 router.post('/', async (req, res) => {
     const { wallet_id, time_after, station_from, station_to } = req.body;
 
     try {
-        // Check if the requested time is in a valid format (e.g., "HH:mm")
-        const timePattern = /^\d{2}:\d{2}$/;
-        if (!timePattern.test(time_after)) {
-            return res.status(400).json({ message: "Invalid time format. Please provide time in 'HH:mm' format." });
+        // Query the database to find the wallet balance
+        const walletQuery = await pool.query(`
+            SELECT "balance" FROM "User" WHERE "wallet_id" = $1
+        `, [wallet_id]);
+
+        if (walletQuery.rows.length === 0) {
+            // If wallet does not exist, return 404 status code with a message
+            return res.status(404).json({ message: `Wallet with ID ${wallet_id} was not found `});
         }
 
-        // Find all possible routes between station_from and station_to
-        const routesQuery = `
-            WITH RECURSIVE "Route" AS (
-                SELECT
-                    1 AS step,
-                    s."station_id" AS current_station,
-                    NULL::INTEGER AS prev_station,
-                    NULL::INTEGER AS train_id,
-                    s."station_id" AS dest_station,
-                    0 AS total_fare,
-                    NULL::TIME AS arrival_time,
-                    NULL::TIME AS departure_time
-                FROM
-                    "Station" s
-                WHERE
-                    s."station_id" = $1
+        const walletBalance = walletQuery.rows[0].balance;
 
-                UNION ALL
-
-                SELECT
-                    r.step + 1,
-                    st."station_id" AS current_station,
-                    r.dest_station AS prev_station,
-                    st."train_id",
-                    r.dest_station AS dest_station,
-                    r.total_fare + COALESCE(st."fare", 0) AS total_fare,
-                    st."arrival_time",
-                    st."departure_time"
-                FROM
-                    "Route" r
-                JOIN
-                    "Stops" st ON r.dest_station = st."station_id" AND r.train_id = st."train_id"
-                WHERE
-                    st."station_id" <> r.prev_station
-                    AND st."departure_time" > COALESCE(r.arrival_time, '00:00:00')
-                    AND st."arrival_time" > $3  -- Check if arrival time is after the specified time_after
-                    AND r.step < 10
+        // Query the database to find all stops between station_from and station_to
+        const stopsQuery = await pool.query(`
+            SELECT "train_id", "station_id", "arrival_time", "departure_time", "fare"
+            FROM "Stops"
+            WHERE "train_id" IN (
+                SELECT "train_id"
+                FROM "Stops"
+                WHERE "station_id" = $1
+                INTERSECT
+                SELECT "train_id"
+                FROM "Stops"
+                WHERE "station_id" = $2
             )
-            SELECT
-                *
-            FROM
-                "Route"
-            WHERE
-                dest_station = $2
-            ORDER BY
-                total_fare, step;
-        `;
-        
-        const { rows } = await pool.query(routesQuery, [station_from, station_to, time_after]);
+            AND "station_id" >= $1 AND "station_id" <= $2
+        `, [station_from, station_to]);
 
-        if (rows.length === 0) {
-            return res.status(403).json({ message: `No ticket available for station ${station_from} to station ${station_to}` });
+        if (stopsQuery.rows.length === 0) {
+            // If no tickets available, return 403 status code with a message
+            return res.status(403).json({ message: `No ticket available for station: ${station_from} to station: ${station_to}`});
         }
 
-        const selectedRoute = rows[0];
-
-        // Calculate the remaining balance
-        const walletQuery = 'SELECT "balance" FROM "User" WHERE "wallet_id" = $1';
-        const walletResult = await pool.query(walletQuery, [wallet_id]);
-        const currentBalance = walletResult.rows[0].balance;
-        const remainingBalance = currentBalance - selectedRoute.total_fare;
-
-        // Check if the user has enough balance
-        if (remainingBalance < 0) {
-            return res.status(402).json({ message: `Recharge amount: ${Math.abs(remainingBalance)} to purchase the ticket` });
+        // Calculate total fare for the trip
+        let totalFare = 0;
+        for (let i = 0; i < stopsQuery.rows.length - 1; i++) {
+            totalFare += stopsQuery.rows[i].fare;
         }
 
-        // Insert ticket information into the Ticket table
-        const insertTicketQuery = `
-            INSERT INTO "Ticket" ("ticket_id", "wallet_id", "balance")
-            VALUES ((SELECT COALESCE(MAX("ticket_id"), 0) FROM "Ticket") + 1, $1, $2)
-            RETURNING "ticket_id";
-        `;
-        const ticketResult = await pool.query(insertTicketQuery, [wallet_id, remainingBalance]);
-        const ticketId = ticketResult.rows[0].ticket_id;
+        // Check if wallet has sufficient balance
+        if (walletBalance < totalFare) {
+            // If insufficient balance, return 402 status code with a message
+            const shortageAmount = totalFare - walletBalance;
+            return res.status(402).json({ message: `Recharge amount: ${shortageAmount} to purchase the ticket` });
+        }
 
-        // Return the ticket information
+        // Deduct fare from wallet balance
+        const remainingBalance = walletBalance - totalFare;
+
+        // Calculate departure and arrival times for each station
+        let currentTime = time_after;
+        const stations = [];
+        for (const stop of stopsQuery.rows) {
+            const arrivalTime = currentTime;
+            if (stop.departure_time) {
+                currentTime = stop.departure_time;
+            }
+            const departureTime = currentTime;
+            stations.push({
+                station_id: stop.station_id,
+                train_id: stop.train_id,
+                arrival_time: stop.arrival_time ? stop.arrival_time : null,
+                departure_time: stop.departure_time ? stop.departure_time : null
+            });
+        }
+
+        // Generate ticket ID (can be a random number for simplicity)
+        const ticketId = Math.floor(Math.random() * 10000) + 1;
+
+        // Respond with 201 status code and ticket information
         return res.status(201).json({
             ticket_id: ticketId,
             balance: remainingBalance,
-            stations: rows.map(route => ({
-                station_id: route.dest_station,
-                train_id: route.train_id,
-                arrival_time: route.arrival_time,
-                departure_time: route.departure_time
-            }))
+            wallet_id: wallet_id,
+            stations: stations
         });
-    } catch (error) {
-        console.error("Error creating ticket:", error);
+
+    } catch (err) {
+        console.error("Error purchasing ticket:", err);
         return res.status(500).json({ message: "Internal server error" });
     }
 });
