@@ -21,7 +21,7 @@ router.post('/', async (req, res) => {
 
         if (walletQuery.rows.length === 0) {
             // If wallet does not exist, return 404 status code with a message
-            return res.status(404).json({ message: `Wallet with ID ${wallet_id} was not found `});
+            return res.status(404).json({ message: `Wallet with id: ${wallet_id} was not found` });
         }
 
         const walletBalance = walletQuery.rows[0].balance;
@@ -44,7 +44,7 @@ router.post('/', async (req, res) => {
 
         if (stopsQuery.rows.length === 0) {
             // If no tickets available, return 403 status code with a message
-            return res.status(403).json({ message: `No ticket available for station: ${station_from} to station: ${station_to}`});
+            return res.status(403).json({ message: `No ticket available for station: ${station_from} to station: ${station_to}` });
         }
 
         // Calculate total fare for the trip
