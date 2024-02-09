@@ -19,6 +19,7 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
     try {
+<<<<<<< HEAD
         const {station_id, station_name, longitude, latitude} = req.body;
         console.log(req.body);
 
@@ -35,8 +36,25 @@ router.post('/', async (req, res) => {
     }
 });
 
+=======
+        const { station_id, station_name, longitude, latitude } = req.body;
+        console.log(req.body);
+>>>>>>> 8e69b7a32902bde263ab09d602e3dd6676166709
 
-router.get('/:id/trains', async (req, res) => { 
+        const insertedStation = await pool.query(
+            'INSERT INTO "Station" ("station_id", "station_name", "longitude", "latitude") VALUES ($1, $2, $3, $4) RETURNING *',
+            [station_id, station_name, longitude, latitude]
+        );
+
+        res.status(201).send(insertedStation.rows[0]);
+
+    } catch (err) {
+        console.log(err);
+        res.sendStatus(500);
+    }
+});
+
+router.get('/:id/trains', async (req, res) => {
     const { id } = req.params;
     try {
         const data = await pool.query(
