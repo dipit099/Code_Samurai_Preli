@@ -67,15 +67,6 @@ The train object represents a metro train and contains a series of stations. It 
 - `stops`: List of stops including station ID, arrival time, departure time, and fare.
 
 
-## API Documentation
-The API endpoints and their specifications are documented using Swagger. Access the API documentation by running the application and visiting the `/api-docs` route in your web browser.
-
-## Contributing
-Contributions to the project are welcome! To contribute:
-1. Fork the repository.
-2. Create a new branch for your feature or bug fix.
-3. Make your changes and submit a pull request.
-
 ## Contributors
 
 Team Name: CODE_CRUSADERS
